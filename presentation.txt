@@ -1,0 +1,37 @@
+Presentation should answer the following questions:
+
+
+- WHY should we care about this topic?
+
+Although this topic specifically might of relatively little importance, it reflects the broader purpose of mining useful textual information from a facebook group. This in itself is of great value for social media research and applications. Social media is different to traditional text: It is not i.i.d. due to current affairs affecting content e.g. In our case, course feedback questions are more likely to be due around a particular timeframe
+
+Represents collaborative question answering. 
+
+- What's so CHALLENGING about it?
+
+Short messages consist of few words or phrases, cannot provide sufficient context information for effective similarity measure (too little data for effective text processing methods)
+
+Variance of quality of posts, some are well-written, others are not.
+
+More information (time stamp, links etc.) not necessarily challenging
+
+BOW does not work because semantic gap would cause e.g. "The Dark Night" not to be related to "Batman", except if we use external knowledge
+
+- What are the current VIABLE SOLUTIONS?
+
+2 basic groups of solutions to data sparseness problem:
+- Surface representation: exploits phrases in original text from different aspects to preserve contextual information. NLP techniques such as parsing not used
+  	  -Disadvantage: no deep understanding of original text
+	  -No use of external knowledge (e.g. to fill semantic gap between 'japan earthquake' and 'nuclear crisis')
+	  -Solution to this: use external souce to narrow the semantic gap
+	  		
+Current solution to measure similarlity without use of conventional attribute vecetors is to measure doc similarity based on connectivity (e.g. # possible paths between authors of the docs) and structural similarity (e.g. # of shared neighbours). Unsure however to what extent this can be applied in our case.
+
+- What are we currently UNABLE to do?
+
+?
+
+- How could the group project findings CONTRIBUTE to this literature?
+
+?
+
