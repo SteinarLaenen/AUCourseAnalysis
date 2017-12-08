@@ -1,0 +1,67 @@
+# Loads posts and users from Excellent and Diverse people of AUC group
+# $ python manage.py runscript loadposts --script-args <ACCESS_TOKEN>
+
+import django
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+
+from reviews.models import *
+from collections import Counter
+import requests
+import facebook
+
+# AUX FUNCS
+def unroll_items(data_paging_dic, *args):#, start_cond, end_cond)
+    """Takes a dic with paging and data keys, returns generator object that 
+    allows easy iteration over the actual data elements. Start returning only
+    when start_cond has been matched, and stops iterating when end_cond has been
+    satisfied, start and end_cond are functions"""
+    started = False
+    ended = False
+    try:
+        start_func = args[0]
+        end_func = args[1]
+    except IndexError: # If no function provided
+        start_func = lambda x: True 
+        end_func = lambda x: False
+    continue_mining = True
+    while continue_mining:
+        for el in data_paging_dic['data']:
+            if end_func(el):
+                continue_mining = False
+                break
+                # If matches end func, stop
+            elif start_func(el): # If matches start_func, yield
+                yield el
+        if data_paging_dic['paging'].has_key('next'):
+            req = requests.get(data_paging_dic['paging']['next'])
+            data_paging_dic = req.json() # Get new results again
+        else: # If no next anymore, we have iterated over all items
+            break
+
+
+        
+def return_user_id(json_dic):
+    """Given a json_dic with keys as defined in network.models.User, 
+    return user either from db if it already existed, otherwise makes new user"""
+    try:
+        return User.objects.get(fb_id=json_dic['id']).id
+    except ObjectDoesNotExist:
+        out = User()
+        out.make(json_dic)
+        out.save()
+        return out.id
+
+
+def run(*args):
+    token = args[0]
+    graph = facebook.GraphAPI(access_token=token)
+    group_results = graph.search(type='group',
+                                 q='The excellent and diverse people of AUC')
+    target_group_id = group_results['data'][0]['id']
+    fbid_user_id_dic = Counter() # Stores fb_id: user_id where user_id is unique
+    # db id
+    for user_dic in graph.get_all_connections(id=target_group_id,
+                                          connection_name='members',
+                                          fields='id,name'):
+        fbid_user_id_dic[user_dic['id']] = return_user_id(user_dic)
