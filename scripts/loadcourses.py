@@ -14,7 +14,7 @@ import json
 NEWCOURSES = 0
 EXISTCOURSES = 0
 def return_instances(Model, alogiven_names):
-    """Returns 'model' instances  matching the names, if not existing already
+    """Returns 'model' instances matching the names, if not existing already
     makes it first"""
     out_instances = []
     for given_name in alogiven_names: # Iter over discipline names in alogiven_names
