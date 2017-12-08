@@ -17,8 +17,6 @@ class Course(models.Model):
     def __str__(self):
         return self.name
 
-
-
 class Discipline(models.Model):
     name = models.CharField(max_length=3, unique=True)
     
@@ -112,7 +110,7 @@ class Comment(models.Model):
 
     post = models.ForeignKey(Post)
     review = models.BooleanField(default=False)
-    course = models.ForeignKey(Course)
+    course = models.ManyToManyField(Course) 
     polarity = models.FloatField(default=0)
 
     def __str__(self):
