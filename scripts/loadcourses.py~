@@ -1,0 +1,8 @@
+# Script that loads course, discipline, track, and theme instances from file
+# with json. Run by
+# $ python manage.py runscript loadcourses --script-args 
+
+
+import django
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
