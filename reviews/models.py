@@ -4,6 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 import requests
 from django.conf import settings
+from django.db import DatabaseError 
 
 class Course(models.Model):
     """Represents a particular course at AUC"""
@@ -19,19 +20,19 @@ class Course(models.Model):
 
 
 class Discipline(models.Model):
-    name = models.CharField(max_length=3)
+    name = models.CharField(max_length=3, unique=True)
     
     def __str__(self):
         return self.name
 
 class Track(models.Model):
-    name = models.CharField(max_length=10)
+    name = models.CharField(max_length=10, unique=True)
 
     def __str__(self):
         return self.name
 
 class Theme(models.Model):
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=20, unique=True)
 
     def __str__(self):
         return self.name
@@ -46,16 +47,35 @@ class TrustRelation(models.Model):
     
 class Post(models.Model):
     """Represents a post in a facebook group"""
-    author = models.ForeignKey('User')
+    fb_id = models.CharField(max_length=100, default='', unique=True)
+    author = models.ForeignKey('User', related_name='posts_authored')
+    text = models.CharField(max_length = 5000, default='')
+    date_posted = models.CharField(max_length=10, default='')
+    time_posted = models.CharField(max_length=10, default='')
     request = models.BooleanField(default=False)
     courses = models.ManyToManyField(Course) # If request, this
     # links to the courses that are asked fb for in the post
+    likes = models.ManyToManyField('User', related_name='posts_liked')
+
+    def make(self, json_dic, author_id):
+        """Given a json dic and the db id of the author of the posts, makes post 
+        instance"""
+        self.author = User.objects.get(id=author_id)
+        self.fb_id = json_dic['id']
+        self.date_posted = json_dic['created_time'][:10]
+        self.time_posted = json_dic['created_time'][11:16]
+        try:
+            self.text = json_dic['message']
+        except DatabaseError:# In case message is too long
+            self.text = 'DATABASEERORR: Message too long'
+                
+            
     
 class User(models.Model):
     """Represents a user on facebook"""
     reviewer = models.BooleanField(default=False) # If user has reviewed at
     # least once
-    fb_id = models.CharField(max_length=100)
+    fb_id = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=25)
     trust = models.ManyToManyField('self', through='TrustRelation',
                                     symmetrical=False) # represents
@@ -72,13 +92,22 @@ class User(models.Model):
         else:
             return ' '.join([fname[0] for fname in names[:-1]]+[names[-1]])
 
+    def make(self, json_dic):
+        """Given dic with info as encountered in fb API, updates values
+        accordingly"""
+        self.name = json_dic['name']
+        self.fb_id = json_dic['id']
+        
+        
+
 class Comment(models.Model):
     """Represents a single comment, if self.review then it represents a review
     else it is just a regular comment"""
-    fb_id = models.CharField(max_length=100)
-    likes = models.ManyToManyField(User, related_name='liked')
-    date_posted = models.CharField(max_length=10)
-    author = models.ForeignKey(User, related_name='reviews')
+    fb_id = models.CharField(max_length=100, default='', unique=True)
+    likes = models.ManyToManyField(User, related_name='comments_liked')
+    date_posted = models.CharField(max_length=10) # YYYY:MM:DD
+    time_posted = models.CharField(max_length=4, default='') # HH:MM
+    author = models.ForeignKey(User, related_name='comments_authored')
     text = models.CharField(max_length=5000, default='')
 
     post = models.ForeignKey(Post)
