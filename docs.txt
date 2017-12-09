@@ -1,0 +1,37 @@
+Models.py defines a number of classes: Course, Theme, Track, Discipline, User, Post, Comment, TrustRelation.
+
+See this file to see what each model looks like.
+
+We access the db of model instances by going into python terminal (first install django-extensions):
+
+$ python manage.py shell_plus
+
+I will focus on users in this example:
+To return a queryset with all users:
+> User.objects.all()
+To get a particular user matching certain query:
+> User.objects.get(name="Paul Lodder") # Returns only one User matching the query (gives error if there is no user or more than one user matching query
+
+To show only users matching certain query:
+
+> User.objects.filter(name__startswith="Paul") # Returns queryset with users whose name startswith "Paul"
+
+More complex queries can be done as well. Say we want to get all Post instances whose author name starts with "Paul":
+> Post.objects.filter(author__name__startswith="Paul") # Returns query set
+
+Let c be a Comment instance, let p be a Post instance, let u be a User instance.
+
+c is a Comment on a Post p, c is authored by User u.
+
+Comment has attribute:
+	author = models.ForeignKey(User, related_name='comments_authored')
+
+If we have a Comment c, and we want to know the author:
+> c.author
+Returns the author instance
+
+Obviously, a User u can have authored more comments. To get the reverse lookup from a foreignkey, we normally do:
+> u.comments_set.all()
+However, because we have multiple relations from Comment to User (both likes and authors), I defined a related_name in the ForeignKey 'comments_authored'. To get all comments_authored of a user u:
+> u.comments_authored.all()
+
