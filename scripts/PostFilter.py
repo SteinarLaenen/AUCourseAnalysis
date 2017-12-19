@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from reviews.models import *
 import re
 import json
+from sentiment_analysis import preprocesscomment
 
 def stringcourselist():
 	stringcourse_list = []
@@ -42,13 +43,13 @@ for i in Post.objects.all():
 # Check if post asks about course
 for i in question_posts:
 	for j in Post.objects.filter(fb_id = i):
+		print type(j.text)
 		print i + "\n" + j.text + "\n"
-
-print "Number of posts:", len(question_posts)
-
-
-import csv
+		print preprocesscomment(j.text)
 
 
-with open("filtered_posts_fbid.txt", "wb") as outfile:
-	outfile.write(json.dumps(list(question_posts)))
+
+#print "Number of posts:", len(question_posts)
+
+#with open("filtered_posts_fbid.txt", "wb") as outfile:
+	#outfile.write(json.dumps(list(question_posts)))
