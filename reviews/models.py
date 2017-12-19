@@ -116,8 +116,23 @@ class Comment(models.Model):
     def __str__(self):
         return self.text[:10]
     
+    def make(self, json_dic):
+        """Given a fb dic, makes instance of comment accordingly, does not set 
+        post relationship because post instance is loaded once in script
+        already, same for likes because we need a connection to facebook to get 
+        all users that liked it"""
+        self.date_posted = json_dic['created_time'][:10]
+        self.time_posted = json_dic['created_time'][11:16]
+        self.fb_id = json_dic['id']
+        self.text = json_dic['message']
+        self.save()
+        try:
+            self.author = User.objects.get(fb_id=json_dic['from']['id'])
+        except ObjectDoesNotExist:
+            print "Author with name", json_dic['from']['name'], 'was not found'
 
 
+        
 # class Request(models.Model):
 #     """Represents a facebook post in which a user requests opinions/thoughts on
 #     one or more courses"""
