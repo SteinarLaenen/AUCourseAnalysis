@@ -125,7 +125,7 @@ class Comment(models.Model):
         self.time_posted = json_dic['created_time'][11:16]
         self.fb_id = json_dic['id']
         self.text = json_dic['message']
-        self.save()
+
         try:
             self.author = User.objects.get(fb_id=json_dic['from']['id'])
         except ObjectDoesNotExist:
