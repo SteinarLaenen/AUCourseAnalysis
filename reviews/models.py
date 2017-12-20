@@ -14,25 +14,25 @@ class Course(models.Model):
     track = models.ManyToManyField('Track')
     level = models.IntegerField(default=0)
     
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 class Discipline(models.Model):
     name = models.CharField(max_length=3, unique=True)
     
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 class Track(models.Model):
     name = models.CharField(max_length=10, unique=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 class Theme(models.Model):
     name = models.CharField(max_length=20, unique=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 class TrustRelation(models.Model):
@@ -55,6 +55,13 @@ class Post(models.Model):
     # links to the courses that are asked fb for in the post
     likes = models.ManyToManyField('User', related_name='posts_liked')
 
+    def __unicode__(self):
+        try:
+            return ' '.join([unicode(self.author), self.date_posted[:4],
+                             unicode(self.id)])
+        except ObjectDoesNotExist:
+            return ' '.join(['Unknown author', self.date_posted[:4],
+                             unicode(self.id)])
     def make(self, json_dic, author_id):
         """Given a json dic and the db id of the author of the posts, makes post 
         instance"""
@@ -66,8 +73,17 @@ class Post(models.Model):
             self.text = json_dic['message']
         except DatabaseError:# In case message is too long
             self.text = 'DATABASEERORR: Message too long'
-                
-            
+    def show_comments(self):
+        for comment in self.comment_set.order_by('date_posted','time_posted'):
+            try:
+                print ''.join([unicode(comment.author),'(',
+                               comment.date_posted,comment.time_posted,':',
+                               comment.text])
+            except ObjectDoesNotExist:
+                print ''.join(['Unknown author','(',
+                               comment.date_posted,comment.time_posted,':',
+                               comment.text])
+            print '---------------------------------------------------------'
     
 class User(models.Model):
     """Represents a user on facebook"""
@@ -82,13 +98,12 @@ class User(models.Model):
 
     # trusted_by = models.ManyToManyField('self', through='TrustRelation',
     #                                 symmetrical=False)    
-    def __str__(self):
-        names = self.name.split()
+    def __unicode__(self):
+        # names = self.name.encode('utf-8').split()
         if self.reviewer:
-            return ' '.join([fname[0] for fname in names[:-1]]+[names[-1]]+
-                            '(rev)')
+            return self.name + ' (rev)'
         else:
-            return ' '.join([fname[0] for fname in names[:-1]]+[names[-1]])
+            return self.name
 
     def make(self, json_dic):
         """Given dic with info as encountered in fb API, updates values
@@ -113,8 +128,11 @@ class Comment(models.Model):
     course = models.ManyToManyField(Course) 
     polarity = models.FloatField(default=0)
 
-    def __str__(self):
-        return self.text[:10]
+    def __unicode__(self):
+        try:
+            return ' '.join([unicode(self.author), unicode(self.post.id)])
+        except ObjectDoesNotExist:
+            return ' '.join([u'Unknown author', unicode(self.post.id)])
     
     def make(self, json_dic):
         """Given a fb dic, makes instance of comment accordingly, does not set 
