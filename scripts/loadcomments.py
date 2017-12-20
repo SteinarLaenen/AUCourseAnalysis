@@ -1,6 +1,5 @@
 # Loads posts and users from Excellent and Diverse people of AUC group
-# $ python manage.py runscript loadposts --script-args <ACCESS_TOKEN> <file
-# with set of fb_ids of relevant posts>
+# $ python manage.py runscript loadposts --script-args <ACCESS_TOKEN>
 
 import django
 from django.conf import settings
@@ -54,24 +53,26 @@ def unroll_items(data_paging_dic, *args):#, start_cond, end_cond)
 
 def run(*args):
     token = args[0]
-    with open(args[1], 'rb') as f:
-        post_fbids = json.load(f)
+    # with open(args[1], 'rb') as f:
+    #     post_fbids = json.load(f)
     graph = facebook.GraphAPI(access_token=token)
     comment_fields = 'created_time,likes,id,from,message'
     fbid_userid_dic = Counter(dict((u.fb_id, u.id) for u in User.objects.all()))
     comments_fbids = set([c.fb_id for c in Comment.objects.all()]) 
     comments_added = 0
-    for post_fbid in post_fbids:
-        try:
-            post_instance = Post.objects.get(fb_id=post_fbid)
-        except ObjectDoesNotExist:
-            print "Post object with fb id", post_fbid, "was not found"
-            continue
+    rel_posts = Post.objects.filter(request=True)# Get relevant posts
+    for post_instance in rel_posts:
+        # try:
+        #     post_instance = Post.objects.get(fb_id=post_fbid)
+        # except ObjectDoesNotExist:
+        #     print "Post object with fb id", post_fbid, "was not found"
+        #     continue
         # extract comments, only on  posts, skip comments on comments for now
         # try:
         #     post_comment_generator = 
 
         #     continue
+        post_fbid = post_instance.fb_id
         try:
             for comment_dic in graph.get_all_connections(id=post_fbid,
                                                          connection_name="comments",
@@ -85,27 +86,26 @@ def run(*args):
                 author_id = fbid_userid_dic[author_dic['id']] # get
                 # db id for user
                 if author_id == 0:
-                    author_id = fbid_userid_dic.update(return_user_id(author_dic))
+                    author_id = return_user_id(author_dic)
                     fbid_userid_dic[author_dic['id']] = author_id
                     print ("User (author) with name", author_dic['name'],
                            "was not found, but added now")
-                    new_c.author_id = author_id
-                    new_c.save()
-                    # add likes
-                    if comment_dic.has_key('likes'):
-                        for user_dic in unroll_items(comment_dic['likes']):
-                            user_id = fbid_user_id_dic[user_dic['id']]
-                            if user_id == 0:
-                                user_id = fbid_user_id_dic.update(return_user_id(user_dic))
-                                fbid_user_id_dic[user_dic['id']] = user_id
-                                print ("User (liker) with name", user_dic['name'],
-                                       "was not found")
-                                new_c.likes.add(user_id)
+                new_c.author_id = author_id
+                new_c.save()
+                # add likes
+                if comment_dic.has_key('likes'):
+                    for user_dic in unroll_items(comment_dic['likes']):
+                        user_id = fbid_userid_dic[user_dic['id']]
+                        if user_id == 0:
+                            user_id = return_user_id(user_dic)
+                            fbid_userid_dic[user_dic['id']] = user_id
+                            print ("User (liker) with name", user_dic['name'],
+                                   "was not found")
+                            new_c.likes.add(user_id)
                 new_c.save()
                 comments_added += 1
                 if comments_added% 100 == 0:
                     print "Loaded", comments_added, "comments"
-
         except facebook.GraphAPIError:
             print ("Post by", post_instance.author.name, post_instance.date_posted,
                    "does not exist anymore")    
