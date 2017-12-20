@@ -1,22 +1,17 @@
-# Identifies posts that request course reviews and identifies the courses
-# mentioned, updates database accordingly
-# $ python manage.py runscript identify_courses_in_posts --script-
+# Identifies courses in all the comments in the db that are replies to requests
+# $ python manage.py runscript identify_courses_in_comments
 
 import django
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
-from reviews.models import *
-from collections import Counter
-import requests
-import facebook
-import re
-import nltk
+from review.models import *
+
 
 STOPWORDS = nltk.corpus.stopwords.words('english') # TO BE DEFINED
 
 
-def posttokens(post):
+def tokenize(post):
     global STOPWORDS
     wordlist = nltk.tokenize.word_tokenize(post)
     wordlist = [word.lower() for word in wordlist]
@@ -27,7 +22,6 @@ def posttokens(post):
     stemmedlist = [nltk.LancasterStemmer().stem(word) for word in filteredlist]
     return stemmedlist
 
-BEREND = posttokens # Function that converts text to tokenized/stemmed
 
 # Map course name to course db id
 coursename_id_dic = dict((unicode(c.name.lower()), c.id) for
@@ -91,23 +85,16 @@ for coursename in coursenames:
     for rel_courseword in coursename_relwords_dic[coursename]:
         course_cond.append(courseword_abbrevs[rel_courseword])
     coursename_course_cond_dic[coursename] = course_cond
-
-    
-        
 # AUX FUNCS
-def return_courses(posttext):
-    """Given a post instance, returns courses that it identified in the post"""
+def return_courses(text, aloc):
+    """Given a text and potential courses, returns courses that it 
+    identified in the post"""
     global coursename_id_dic, coursenames, coursename_relwords_dic
     global courseword_frequency, courseword_abbrevs, abbrevs
-    textlower = posttext # post.text.lower()
-    processed_text = BEREND(textlower) # BEREND(post.text)
+    textlower = text.lower() # posttext # post.text.lower()
+    processed_text = tokenize(textlower) # BEREND(post.text)
     out = set()
-    out.update(set(cname for cname in coursenames if cname in textlower))
-    abbrevs_found = [a for a in abbrevs if a in processed_text]
-    # Get relevant course words (filtered stopwords)
-    plausible_courses = set()
-    for abb in abbrevs_found:
-        plausible_courses.update(abbrev_courses_dic[abb])
+    plausible_courses = aloc
     for coursename in plausible_courses:
         # THIS CONDITION SHOULD BE INCLUDED IN COMMENTS ONLY USING ALREADY RELEVANT
         # COURSES, OTHERWISE GOING TO BE TO HARD
@@ -115,14 +102,12 @@ def return_courses(posttext):
         # unique (i.e. satisfies presence of this course
         # (e.g. gastronomy occurs only once in all courses, hence no need for
         # full name)        
-        # for course_word in coursename_relwords_dic[coursename]:
-        #     if (courseword_frequency[course_word] == 1 and
-        #     any(abbrev in processed_text for abbrev in
-        #         courseword_abbrevs[course_word])):
-        #         out.add(coursename)
-        #         continue
-
-
+        for course_word in coursename_relwords_dic[coursename]:
+            if (courseword_frequency[course_word] == 1 and
+            any(abbrev in processed_text for abbrev in
+                courseword_abbrevs[course_word])):
+                out.add(coursename)
+                continue
         # Else check if course_cond is satisifed, i.e. any of alterantives versions
         # of course words are identified in right order
         course_cond = coursename_course_cond_dic[coursename]
@@ -141,50 +126,21 @@ def return_courses(posttext):
 
 
 def run(*args):
-    """Links posts to courses mentioned and checks if they are 
-    asking for feedback"""
-    request_tokens = {'thought', 'comment', 'workload', 'feedback'}# Words indicative
-    # of asking for feedback
-
-    # Words added by inspection, e.g. people tends to refer to ppl taking that
-    # class, hence not asking for feedback
-    undesired_tokens = {'teacher', 'lecturer', 'prof', 'manual',
-                        'switch', 'people', 'guys', 'grade', 'offer', 'regist'} 
-    # Set with ids of courses with 'book' in its name  because if
-    # 'return_courses' identified courses but the word 'book' is in the post
-    # text, it most likely concerns asking for books
-    BOOK_IDS = {course.id for course in 
-                Course.objects.filter(name__contains='book')}
-    i = 0
-    out = []
-    # f = open('post_identification_test.txt', 'w')
-    for post_inst in Post.objects.filter(text__contains='?'):
-
-        textlower = post_inst.text.lower()
-        # Check if undesired words are in there
-        if any(word in textlower for word in undesired_tokens):
-            continue
-        
-        # Preliminary condition of any request_token (see above)
-        # must be satisfied
-        if any(word in textlower for word in request_tokens):
-            identified_courses = return_courses(textlower)
-            if identified_courses == set():
-                continue # No courses identified so go to next post
-            
-            
-            # If no 'book' course is identifed, yet 'book' is in the post,
-            # skip it because most likely asking for books
-            if (BOOK_IDS.intersection(identified_courses) == set() and
-                'book' in textlower):
-                continue
-            post_inst.request=True
+    i, j = 0, 0
+    for post in Post.objects.filter(request=True):
+        comments = post.comment_set.all()
+        post_coursenames = [c.name.lower() for c in post.courses.all()]
+        for comment in comments:
+            textlower = comment.text.lower()
+            courses_identified = return_courses(textlower, post_coursenames)
+            if courses_identified == set():
+                continue # No courses identified so skip
+            # Else, add identified courses and set comment 'review' attribute to
+            # True
+            for course_id in courses_identified:
+                j += 1
+                comment.courses.add(course_id)
+            comment.review=True
             i += 1
-            for course_id in identified_courses:
-                post_inst.courses.add(course_id)
-            post_inst.save()
-            out.append(post_inst)
-            # f.write(''.join(["Identified: ", ', '.join(identified_courses), ' in\n',post_inst.text,'\n--------------------------------------------------------\n']).encode('utf-8'))
-        else:
-            continue # If none of keywords in post, likely not relevant
-    print "Found", i, "posts that ask for course reviews"
+            comment.save()
+    print "Identified", i, "comments that link, in total,", j "many times to courses"
