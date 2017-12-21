@@ -62,4 +62,10 @@ def socialcont(comment):
 		pass
 	else: 
 		totquality += float(totlikesaut / num_of_reviews_aut)
+
+	## disciplines authors
+	course = comment.courses.first() # WRONG
+	discipline = comment.courses.discipline.all()
+	authority = (sum([comment.author.d for d in discipline])/len(discipline))/num_of_reviews_aut ##WRONG 
+	
 	return totquality
