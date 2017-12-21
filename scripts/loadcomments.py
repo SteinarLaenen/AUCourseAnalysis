@@ -101,7 +101,7 @@ def run(*args):
                             fbid_userid_dic[user_dic['id']] = user_id
                             print ("User (liker) with name", user_dic['name'],
                                    "was not found")
-                            new_c.likes.add(user_id)
+                        new_c.likes.add(user_id)
                 new_c.save()
                 comments_added += 1
                 if comments_added% 100 == 0:
