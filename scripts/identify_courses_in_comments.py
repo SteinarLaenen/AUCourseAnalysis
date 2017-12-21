@@ -4,9 +4,11 @@
 import django
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from reviews.models import *
 
-from review.models import *
-
+from collections import Counter
+import nltk
+import re
 
 STOPWORDS = nltk.corpus.stopwords.words('english') # TO BE DEFINED
 
@@ -25,7 +27,8 @@ def tokenize(post):
 
 # Map course name to course db id
 coursename_id_dic = dict((unicode(c.name.lower()), c.id) for
-                         c in Course.objects.all())
+                         c in Course.objects.all() if 'internship' not in
+                         c.name.lower())
 
 courseid_name_dic = dict((coursename_id_dic[key], key) for key in
                          coursename_id_dic.keys())
@@ -76,6 +79,12 @@ courseword_frequency = Counter() # Map courseword to  frequency
 for cname in coursenames:
     courseword_frequency.update(Counter(coursename_relwords_dic[cname]))
 
+coursename_abbrevs = dict((cname, ''.join(cword[0] for cword in
+                                          re.findall('[a-z]+',
+                                                     cname))) for
+                          cname in coursenames)
+
+
 # Map course name to a list with sets of alternative course words
 # E.g.: 'introduction to biology' would map to something like:
 # [{'intro', 'introduction', 'introduc'}, {'biology', 'bio', 'biolog'}]
@@ -96,6 +105,13 @@ def return_courses(text, aloc):
     out = set()
     plausible_courses = aloc
     for coursename in plausible_courses:
+        abbrev = coursename_abbrevs[coursename]
+        if len(abbrev) > 2 and abbrev in textlower:
+            out.add(coursename)
+            continue
+        if len(aloc) == 1:
+            out.add(coursename)
+            continue
         # THIS CONDITION SHOULD BE INCLUDED IN COMMENTS ONLY USING ALREADY RELEVANT
         # COURSES, OTHERWISE GOING TO BE TO HARD
         # FIrst check if any of associated course words is
@@ -143,4 +159,4 @@ def run(*args):
             comment.review=True
             i += 1
             comment.save()
-    print "Identified", i, "comments that link, in total,", j "many times to courses"
+    print "Identified", i, "comments that link, in total,", j, "many times to courses"

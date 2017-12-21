@@ -31,7 +31,8 @@ BEREND = posttokens # Function that converts text to tokenized/stemmed
 
 # Map course name to course db id
 coursename_id_dic = dict((unicode(c.name.lower()), c.id) for
-                         c in Course.objects.all())
+                         c in Course.objects.all() if 'internship' not in
+                         c.name.lower())
 
 courseid_name_dic = dict((coursename_id_dic[key], key) for key in
                          coursename_id_dic.keys())
