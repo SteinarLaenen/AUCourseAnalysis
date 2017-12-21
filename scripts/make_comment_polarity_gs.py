@@ -23,11 +23,11 @@ def run(*args):
         if i == target:
             break
         print  ''.join(['(',unicode(comment.id),')']), '------------------------------------------\n'
-        print comment.text, '\n'
+        print comment.text.encode('utf-8'), '\n'
         pol_gs = int(input("POLARITY OF ABOVE COMMENT IS: "))
 
         if pol_gs == 3:
-            comment.review= False
+            comment.review = False
             comment.polarity_gs = pol_gs # Set to 3 to later see which comments
             # manually removed
             print "Set 'review' attribute of this comment as 'False'."
