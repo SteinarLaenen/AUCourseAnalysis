@@ -1,33 +1,36 @@
-'''General idea of how to use social context in order to rate reviews
+# $python manage.py runscript update_reviews_context_quality
 
-Problem: Every post (course) has a set of reviews (comments) which will be used for a final course rating. In order to effectively rate the courses, there must be a quality measure for the comments. By looking at likes per comment we can measure quality. 
+#BEREND:
+# General idea of how to use social context in order to rate reviews
 
-Steps:
+# Problem: Every post (course) has a set of reviews (comments) which will be used for a final course rating. In order to effectively rate the courses, there must be a quality measure for the comments. By looking at likes per comment we can measure quality. 
 
-1. Look at the likes of a review
-if number_of_likes = 0:
-	assign standard quality
-if number_of_likes > 0:
-	For every person that liked the review:
-		look at total number of reviews written by person (questionable if this is a good measure)
-		look at total number of likes on reviews by person
-		Assign 'importance' to like of this person
-	final_quality = sum of all like_importances
+# Steps:
 
-Based on the 'importance' of all the likes, assign a quality to the review
+# 1. Look at the likes of a review
+# if number_of_likes = 0:
+# 	assign standard quality
+# if number_of_likes > 0:
+# 	For every person that liked the review:
+# 		look at total number of reviews written by person (questionable if this is a good measure)
+# 		look at total number of likes on reviews by person
+# 		Assign 'importance' to like of this person
+# 	final_quality = sum of all like_importances
 
-2. Quality of the reviewer
-Data that could be used: 
-	- Total number of likes the reviewer had before the review in question
-	- Total number of reviews written by reviewer
-	- Quality of previous reviews (where do you start)
+# Based on the 'importance' of all the likes, assign a quality to the review
+
+# 2. Quality of the reviewer
+# Data that could be used: 
+# 	- Total number of likes the reviewer had before the review in question
+# 	- Total number of reviews written by reviewer
+# 	- Quality of previous reviews (where do you start)
 
 
-pseudocode: 
-'''
+# pseudocode: 
+
 def socialcont(comment):
-	'''takes comment and rates it based on social context i.e. likes by other people'''
-	
+	"""takes comment and rates it based on social context i.e. likes by 
+        other people"""
 	totquality = float(0)
 	## like importance
 	# only if the comment has likes we continue this part
