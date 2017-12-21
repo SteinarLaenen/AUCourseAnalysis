@@ -30,7 +30,7 @@ def socialcont(comment):
 	
 	totquality = float(0)
 	## like importance
-	# only if the cmment has likes we continue
+	# only if the comment has likes we continue this part
 	if len(comment.likes.all())>0:
 		#go through all people who liked the review - 'likers'
 		for user in comment.likes.all():
@@ -63,5 +63,3 @@ def socialcont(comment):
 	else: 
 		totquality += float(totlikesaut / num_of_reviews_aut)
 	return totquality
-
-def socialcont2(comment):
