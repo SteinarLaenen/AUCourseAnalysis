@@ -188,6 +188,7 @@ class Comment(models.Model):
     polarity_gs = models.IntegerField(default=-2)
     polarity_predicted = models.IntegerField(default=-2)
 
+    quality_measure = models.FloatField(default=-1)
     def __unicode__(self):
         try:
             return ' '.join([unicode(self.author), unicode(self.post.id)])
