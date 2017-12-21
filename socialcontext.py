@@ -34,38 +34,18 @@ def socialcont(comment):
 	if len(comment.likes.all())>0:
 		#go through all people who liked the review - 'likers'
 		for user in comment.likes.all():
-			# go through all reviews written by liker
-			reviewsbyuser = [com for com in Comment.objects.filter(author=user) if com.review] 
-			num_of_reviews = float(len(reviewsbyuser))
-			# get total likes on all reviews written by liker
-			totlikes = float(0)
-			for comment2 in reviewsbyuser:
-				totlikes += float(len(comment2.likes.all()))
-			if num_of_reviews == float(0):
-				continue
-			else: 
-				# total quality/importance of like is like per review by liker
-				totquality += float(totlikes / num_of_reviews) #(NORMALIZATION NEEDED)
-	
-	#number of likes on review itself, can be disregarded if author_quality is implemented
-	totquality += float(len(comment.likes.all()))
+			likes_per_review = user.likes_per_review
+			totquality += likes_per_review #NORMALIZATION NEEEDED
 	
 	## author_quality
-	# look at other reviews written by this reviewer
-	reviewsbyauthor = [rev for rev in Comment.objects.filter(author=comment.author) if rev.review]
-	num_of_reviews_aut = float(len(reviewsbyauthor))
-	totlikesaut = float(0)
-	#total number of likes of this reviewer
-	for comment3 in reviewsbyauthor:
-		totlikesaut += float(len(comment3.likes.all()))
-	if num_of_reviews_aut == float(0):
-		pass
-	else: 
-		totquality += float(totlikesaut / num_of_reviews_aut)
-
+	totlikesaut = comment.author.likes_per_review
+	## Update total quality
+	totquality += tot_likes_aut
+	# total number of reviews author
+	num_of_reviews_aut = len([rev for rev in Comment.objects.filter(author=user)])
 	## disciplines authors
-	course = comment.courses.first() # WRONG
-	discipline = comment.courses.discipline.all()
-	authority = (sum([comment.author.d for d in discipline])/len(discipline))/num_of_reviews_aut ##WRONG 
-	
+	courses = comment.courses.all() # WRONG
+	disciplines = [c.discipline.all() for c in courses]
+	authority = (sum([comment.author.numberofreviews_set.get(discipline==d) for d in discipline])/len(discipline))/num_of_reviews_aut ##WRONG 
+
 	return totquality
