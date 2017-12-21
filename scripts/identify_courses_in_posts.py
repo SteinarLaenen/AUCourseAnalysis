@@ -51,11 +51,32 @@ porterstemmer = nltk.PorterStemmer()
 
 courseword_abbrevs = Counter()
 
+# Mistakes of algorithm found, manually defined in dic below
+# coursename_manualabbrev_dic = {
+#     "basic research methods and statistics": "brms",
+#     "performing arts - theatre": "performing arts",
+#     "brain and mind (for ssc students)": "brain and mind",
+#     "calculus for economics": "calculus for econ",
+#     "human rightstand security": "human rights & security",
+#     "performing arts - music": "performing arts",
+#     "classical and modern sociological thought":
+#     "classical & modern sociological thought",
+#     "international political economy (ipe)": "international political economy",
+#     "advanced logic": "advanced logic",
+#     "market failure, institutions and economic policy": "market failure",
+#     "existentialism in literature and philosophy":
+#     "existentialismtin lit and philo",
+#     "human body i": "human body i"}
+
 # Manually defined alternative words for introduction
 manualabbrev_dic = {
     'introduction': {'intro'},
     'advanced': {'adv'},
-    'psychology':{ 'psych'}}
+    'psychology':{ 'psych'},
+    }
+
+
+# FIX PHILOSOPH 
                     
 for cname in coursenames:
     rel_words = [word for word in re.findall('[0-9a-z]+', cname) if
@@ -87,6 +108,11 @@ for cname in coursenames:
 # E.g.: 'introduction to biology' would map to something like:
 # [{'intro', 'introduction', 'introduc'}, {'biology', 'bio', 'biolog'}]
 coursename_course_cond_dic = dict()
+
+
+dict() # Map coursenames to manually defined
+# abbreviations
+
 for coursename in coursenames:
     course_cond = []
     for rel_courseword in coursename_relwords_dic[coursename]:
