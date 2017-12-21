@@ -4,6 +4,9 @@
 # Saves input values to respective comment's 'polarity_gs' attribute
 # Each print of the comment's text is accompanied by the comment's database id
 # So in case mistakes are made, one can go back manually
+# input options:
+# -1, 0, 1, 3 (neg, neutr, pos, comment is irrelevant and should not be set as a
+# review) 
 import django
 from django.conf import settings
 
