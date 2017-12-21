@@ -54,7 +54,7 @@ class Post(models.Model):
     courses = models.ManyToManyField(Course) # If request, this
     # links to the courses that are asked fb for in the post
     likes = models.ManyToManyField('User', related_name='posts_liked')
-
+    
     def __unicode__(self):
         try:
             return ' '.join([unicode(self.author), self.date_posted[:4],
@@ -125,7 +125,7 @@ class Comment(models.Model):
 
     post = models.ForeignKey(Post)
     review = models.BooleanField(default=False)
-    course = models.ManyToManyField(Course) 
+    courses = models.ManyToManyField(Course) 
     polarity = models.FloatField(default=0)
 
     def __unicode__(self):
