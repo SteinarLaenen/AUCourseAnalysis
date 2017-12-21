@@ -74,6 +74,8 @@ class Post(models.Model):
         except DatabaseError:# In case message is too long
             self.text = 'DATABASEERORR: Message too long'
     def show_comments(self):
+        print 'Post:', unicode(self.author), self.date_posted, self.time_posted, ':\n',
+        print self.text,'\n---------------------------------------------------------'
         for comment in self.comment_set.order_by('date_posted','time_posted'):
             try:
                 print ''.join([unicode(comment.author),'(',
@@ -125,8 +127,11 @@ class Comment(models.Model):
 
     post = models.ForeignKey(Post)
     review = models.BooleanField(default=False)
-    courses = models.ManyToManyField(Course) 
-    polarity = models.FloatField(default=0)
+    courses = models.ManyToManyField(Course)
+    # Golden standard, set to -2 to know that is has not been rated
+    polarity_gs = models.FloatField(default=-2)
+    # Polarity as predicted 
+    polarity_predicted = models.FloatField(default=-2)
 
     def __unicode__(self):
         try:
