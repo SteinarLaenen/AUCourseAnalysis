@@ -14,7 +14,6 @@ def run(*args):
     for c in Comment.objects.filter(review=True):
         c.author.reviewer = True
         c.author.save()
-
     for author in User.objects.filter(reviewer=True):
         nofauthors += 1
         author.update_reviews_written()

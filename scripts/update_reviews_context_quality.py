@@ -22,8 +22,10 @@
 # 	- Total number of likes the reviewer had before the review in question
 # 	- Total number of reviews written by reviewer
 # 	- Quality of previous reviews (where do you start)
+import django
+from django.conf import settings
 
-
+from reviews.models import *
 
 
 def socialcont(comment):
@@ -31,14 +33,6 @@ def socialcont(comment):
         other people"""
         author = comment.author
 	comm_qual = comment.return_quality()
-        # float(0) # Comment quality
-        # # Average of the average number of likes of all likers of this comment
-        # avg_likes_per_review = 0
-        # comment_likes = comment.likes.all()
-        # for liker in comment_likes:
-        #         # Add 1 as baseline to prevent penalizing non-reviewers
-        #         comm_qual += (1 + liker.likes_per_review)
-	# # Author quality
 
         author_qual = comment.author.likes_per_review
 
@@ -49,27 +43,16 @@ def socialcont(comment):
         for course in comment.courses.all():
                 author_course_authorities.append(
                         author.return_course_authority_scaled(course))
-        if len(course.comments.all()) == 0:
+        if len(comment.courses.all()) == 0:
                 overall_author_authority = 0
         else:
                 overall_author_authority = (sum(author_course_authorities)/
                                             len(author_course_authorities))
 
-                # current_course_auth = 0
-                # n_of_course_disciplines = 0 # Disciplines associated w course
-                # for disc in course.discipline.all():
-                #         current_course_auth += author_disciplines.get(discipline=disc).number
-                #         n_of_course_disciplines += 1
-                # # Divide number of reviews written in any disc associated w course
-                # # by number of disciplines associated with course
-                # if n_of_course_disciplines == 0:
-                #         current_course_auth = 0
-                # else:
-                #         current_course_auth /= n_of_course_disciplines
-                # Add to list of which average is gonna be taken later
-                # author_course_authorities.append(current_course_auth)
-        # if len(author_course_authorities) == 0:
-        #         author_authority = 0
-        # else:
-        #         author_authority = sum(author_course_authorities)/len(author_course_authorities)
-	return (comm_qual, author_qual, overall_author_authority)
+	return comm_qual+ author_qual +overall_author_authority
+
+def run(*args):
+        for c in Comment.objects.filter(review=True):
+                qual = socialcont(c)
+                c.quality_measure = qual
+                c.save()
