@@ -20,4 +20,4 @@ def run(*args):
         author.update_reviews_written()
         author.update_likes_per_review()    
         author.save()
-    print "Updated stats for", authors, "users"
+    print "Updated stats for", nofauthors, "users"

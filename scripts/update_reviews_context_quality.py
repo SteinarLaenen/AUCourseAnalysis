@@ -1,6 +1,4 @@
-# $python manage.py runscript update_reviews_context_quality
-
-#BEREND:
+# BEREND's prepping text::
 # General idea of how to use social context in order to rate reviews
 
 # Problem: Every post (course) has a set of reviews (comments) which will be used for a final course rating. In order to effectively rate the courses, there must be a quality measure for the comments. By looking at likes per comment we can measure quality. 
@@ -26,43 +24,52 @@
 # 	- Quality of previous reviews (where do you start)
 
 
-# pseudocode: 
+
 
 def socialcont(comment):
 	"""takes comment and rates it based on social context i.e. likes by 
         other people"""
-	totquality = float(0)
-	## like importance
-	# only if the comment has likes we continue this part
-	if len(comment.likes.all())>0:
-		#go through all people who liked the review - 'likers'
-		for user in comment.likes.all():
-			# go through all reviews written by liker
-			reviewsbyuser = [com for com in Comment.objects.filter(author=user) if com.review] 
-			num_of_reviews = float(len(reviewsbyuser))
-			# get total likes on all reviews written by liker
-			totlikes = float(0)
-			for comment2 in reviewsbyuser:
-				totlikes += float(len(comment2.likes.all()))
-			if num_of_reviews == float(0):
-				continue
-			else: 
-				# total quality/importance of like is like per review by liker
-				totquality += float(totlikes / num_of_reviews) #(NORMALIZATION NEEDED)
-	
-	#number of likes on review itself, can be disregarded if author_quality is implemented
-	totquality += float(len(comment.likes.all()))
-	
-	## author_quality
-	# look at other reviews written by this reviewer
-	reviewsbyauthor = [rev for rev in Comment.objects.filter(author=comment.author) if rev.review]
-	num_of_reviews_aut = float(len(reviewsbyauthor))
-	totlikesaut = float(0)
-	#total number of likes of this reviewer
-	for comment3 in reviewsbyauthor:
-		totlikesaut += float(len(comment3.likes.all()))
-	if num_of_reviews_aut == float(0):
-		pass
-	else: 
-		totquality += float(totlikesaut / num_of_reviews_aut)
-	return totquality
+        author = comment.author
+	comm_qual = comment.return_quality()
+        # float(0) # Comment quality
+        # # Average of the average number of likes of all likers of this comment
+        # avg_likes_per_review = 0
+        # comment_likes = comment.likes.all()
+        # for liker in comment_likes:
+        #         # Add 1 as baseline to prevent penalizing non-reviewers
+        #         comm_qual += (1 + liker.likes_per_review)
+	# # Author quality
+
+        author_qual = comment.author.likes_per_review
+
+        author_disciplines = author.numberofreviews_set.all()
+
+        # List with authorities of author for each course discussed in comment
+        author_course_authorities = []
+        for course in comment.courses.all():
+                author_course_authorities.append(
+                        author.return_course_authority_scaled(course))
+        if len(course.comments.all()) == 0:
+                overall_author_authority = 0
+        else:
+                overall_author_authority = (sum(author_course_authorities)/
+                                            len(author_course_authorities))
+
+                # current_course_auth = 0
+                # n_of_course_disciplines = 0 # Disciplines associated w course
+                # for disc in course.discipline.all():
+                #         current_course_auth += author_disciplines.get(discipline=disc).number
+                #         n_of_course_disciplines += 1
+                # # Divide number of reviews written in any disc associated w course
+                # # by number of disciplines associated with course
+                # if n_of_course_disciplines == 0:
+                #         current_course_auth = 0
+                # else:
+                #         current_course_auth /= n_of_course_disciplines
+                # Add to list of which average is gonna be taken later
+                # author_course_authorities.append(current_course_auth)
+        # if len(author_course_authorities) == 0:
+        #         author_authority = 0
+        # else:
+        #         author_authority = sum(author_course_authorities)/len(author_course_authorities)
+	return (comm_qual, author_qual, overall_author_authority)
