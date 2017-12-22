@@ -6,6 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import requests
 from django.conf import settings
 from django.db import DatabaseError
+from collections import Counter
 import json
 # Dics for which values are computed by make_min_max_dics, used for feature scaling
 
@@ -24,6 +25,26 @@ class Course(models.Model):
     
     def __unicode__(self):
         return self.name
+
+    def show_rating(self):
+        """Shows rating for course"""
+        comments = self.comment_set.all()
+        comment_metric_dic = Counter(dict((c, (c.quality_measure*
+                                               c.polarity_predicted))
+                                          for c in comments))
+        comments_sorted = comment_metric_dic.most_common()
+        
+        pos_comments = [c[0] for c in comments_sorted if c[1] >= 0]
+        neg_comments = [c[0] for c in comments_sorted if c[1] < 0]
+        print "POSITIVE COMMENTS"
+        for p in pos_comments:
+            print p.text, '\n--------------------------------------------------'
+        print "NEGATIVE COMMENTS"
+        for p in neg_comments:
+            print p.text, '\n--------------------------------------------------'
+            
+            
+    
 
 class Discipline(models.Model):
     name = models.CharField(max_length=3, unique=True)
