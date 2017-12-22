@@ -6,8 +6,14 @@ from django.core.exceptions import ObjectDoesNotExist
 import requests
 from django.conf import settings
 from django.db import DatabaseError
+import json
+# Dics for which values are computed by make_min_max_dics, used for feature scaling
 
-
+with open('min_max_v_dics.txt', 'r') as f:
+    alo2dics = json.load(f)
+    MIN_DIC = alo2dics[0]
+    MAX_DIC = alo2dics[1]
+    
 class Course(models.Model):
     """Represents a particular course at AUC"""
     name = models.CharField(max_length=50, null=True)
@@ -110,7 +116,7 @@ class User(models.Model):
                                     symmetrical=False) # represents
     # trust towards other users, 'through TrustRelation' allows to store
     # extra data with this 'edge' (see TrustRelation)
-    likes_per_review = models.IntegerField(default=0)
+    likes_per_review = models.FloatField(default=0)
     reviews_written_in = models.ManyToManyField(Discipline,
                                                 through='NumberOfReviews')
     # trusted_by = models.ManyToManyField('self', through='TrustRelation',
@@ -145,7 +151,6 @@ class User(models.Model):
             for course in comment.courses.all():
                 for dis in course.discipline.all():
                     DIS_NOR_dic[dis].number += 1
-
         SCI.user = self
         SSC.user = self
         HUM.user = self
@@ -166,10 +171,50 @@ class User(models.Model):
         if n_of_reviews == 0:
             self.likes_per_review = 0
         else:
-            self.likes_per_review = n_of_likes/n_of_reviews
+            self.likes_per_review = float(n_of_likes/n_of_reviews)
         self.save()
-        
 
+    def return_likes_per_review_scaled(self):
+        """Returns scaled value for likes per review"""
+        global MIN_DIC, MAX_DIC
+        lpr = self.likes_per_review
+        lpr_min, lpr_max = MIN_DIC['LPR'], MAX_DIC['LPR']
+        return (lpr - lpr_min)/(lpr_max - lpr_min)
+
+
+    
+    def return_course_authority(self, course):
+        """Given a course instance, returns a value to represent the authority
+        of user on a particular course"""
+        out = 0
+        n_of_course_disciplines = 0 # Disciplines associated w course
+        for disc in course.discipline.all():
+            out += self.numberofreviews_set.get(discipline=disc).number
+            n_of_course_disciplines += 1
+        # Divide number of reviews written in any disc associated w course
+        # by number of disciplines associated with course
+        if n_of_course_disciplines == 0:
+            out = 0
+        else:
+            out /= n_of_course_disciplines
+        return out
+
+    def return_course_authority_scaled(self, course):
+        """Given a course instance, returns a value to represent the authority
+        of user on a particular course, scaled"""
+        out = self.return_course_authority(course)
+        global MIN_DIC, MAX_DIC
+        ca = self.likes_per_review
+        ca_min, ca_max = MIN_DIC['CA'], MAX_DIC['CA']
+        return out
+
+    def return_courses_reviewed(self):
+        """Returns set of courses reviewed by current user"""
+        out = []
+        for comment in self.comments_authored.filter(review=True):
+            for course in comment.courses.all():
+                out.append(course)
+        return out
 
 class Comment(models.Model):
     """Represents a single comment, if self.review then it represents a review
@@ -209,8 +254,33 @@ class Comment(models.Model):
             self.author = User.objects.get(fb_id=json_dic['from']['id'])
         except ObjectDoesNotExist:
             print "Author with name", json_dic['from']['name'], 'was not found'
+ 
+    def return_quality(self):
+        """Returns quality, as based on likes and the quality of the likers"""
+        out = 0
+        for liker in self.likes.all():
+            out += (1 + liker.likes_per_review)
+            # Add 1 as baseline to prevent counting likes from non-reviewers
+            # as 0
+        return out
 
+    def return_quality_scaled(self):
+        """Returns quality of comment, scaled"""
+        global MIN_DIC, MAX_DIC
+        cq = self.return_quality()
+        cq_min, cq_max = MIN_DIC['CQ'], MAX_DIC['CQ']
+        return (cq - cq_min)/(cq_max - cq_min)
 
+        
+
+    # def return_comment_quality(self):
+    #     """Given a comment, returns the comment quality based on likers"""
+    #     out = 0
+    #     for liker in self.likes.all():
+    #         # Add 1 as baseline to prevent penalizing non-reviewers
+    #         out += (1 + liker.likes_per_review)
+    #     return out
+    
         
 # class Request(models.Model):
 #     """Represents a facebook post in which a user requests opinions/thoughts on
